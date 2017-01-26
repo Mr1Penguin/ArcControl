@@ -1,7 +1,9 @@
-﻿using Windows.Foundation;
+﻿using System;
+using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -11,7 +13,7 @@ namespace ArcControl
     {
         public static readonly DependencyProperty RadiusProperty = DependencyProperty.Register("Radius", typeof(double), typeof(Arc), new PropertyMetadata(50.0, OnSizePropertyChanged));
         public static readonly DependencyProperty ThicknessProperty = DependencyProperty.Register("Thickness", typeof(double), typeof(Arc), new PropertyMetadata(2.0, OnSizePropertyChanged));
-        public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Color), typeof(Arc), new PropertyMetadata(default(Brush)));
+        public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(Arc), new PropertyMetadata(default(Brush)));
         public static readonly DependencyProperty PercentValueProperty = DependencyProperty.Register("PercentValue", typeof(double), typeof(Arc), new PropertyMetadata(0.0, OnPercentValuePropertyChanged));
 
         public Arc()
@@ -43,11 +45,11 @@ namespace ArcControl
             }
         }
 
-        public Color Fill
+        public Brush Fill
         {
             get
             {
-                return (Color)GetValue(FillProperty);
+                return (Brush)GetValue(FillProperty);
             }
             set
             {
@@ -92,7 +94,12 @@ namespace ArcControl
             Children.Clear();
 
             Path radialStrip = ArcHelper.GetCircleSegment(GetCenterPoint(), Radius, GetAngle());
-            radialStrip.Stroke = new SolidColorBrush(Fill);
+            Binding strokeColorBinding = new Binding
+            {
+                Source = this,
+                Path = new PropertyPath("Fill")
+            };
+            BindingOperations.SetBinding(radialStrip, Path.StrokeProperty, strokeColorBinding);
             radialStrip.StrokeThickness = Thickness;
 
             Children.Add(radialStrip);
@@ -117,6 +124,19 @@ namespace ArcControl
                 angle = 359.999;
             }
             return angle;
+        }
+
+        private class ColorToBrushConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, string language)
+            {
+                return new SolidColorBrush((Color)value);
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, string language)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
